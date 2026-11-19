@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบบันทึกกิจกรรมนักเรียน - SIS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+  <!-- HTML5-QRCode Library -->
+  <script src="https://unpkg.com/html5-qrcode"></script>
+
+  <style>
+    body { font-family: 'Sarabun', sans-serif; }
+    #reader { border: none !important; }
+    #reader video { object-fit: cover !important; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+  <!-- แถบเมนูด้านบน -->
+  <nav class="bg-indigo-600 text-white shadow-md px-6 py-4 flex justify-between items-center">
+    <div class="flex items-center space-x-3">
+      <i class="fa-solid fa-id-card-clip text-2xl"></i>
+      <span class="text-xl font-bold tracking-wide">Activity System</span>
+    </div>
+    <div id="userInfo" class="hidden flex items-center space-x-4">
+      <span id="teacherNameDisplay" class="text-sm font-medium"></span>
+      <button onclick="logout()" class="bg-red-500 hover:bg-red-600 px-3 py-1.5 text-xs font-semibold rounded-lg transition">
+        <i class="fa-solid fa-right-from-bracket mr-1"></i> ออกระบบ
+      </button>
+    </div>
+  </nav>
+
+  <main class="flex-grow container mx-auto px-4 py-8 max-w-4xl">
+
+    <!-- 1. หน้าล็อกอินสำหรับครู -->
+    <section id="loginSection" class="bg-white p-8 rounded-2xl shadow-xl max-w-md mx-auto mt-10 border border-slate-100">
+      <div class="text-center mb-6">
+        <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-3">
+          <i class="fa-solid fa-lock text-2xl"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-slate-800">เข้าใช้งานระบบ (สำหรับครู)</h2>
+        <p class="text-slate-400 text-sm mt-1">กรุณากรอกสิทธิ์เข้าใช้งานเพื่อจัดการกิจกรรม</p>
+      </div>
+      <form onsubmit="handleLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-sm font-semibold mb-1 text-slate-600">รหัสครู</label>
+          <div class="relative">
+            <i class="fa-solid fa-user-tie absolute left-3 top-3.5 text-slate-400"></i>
+            <input type="text" id="teacherId" required class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold mb-1 text-slate-600">รหัสบัตรประชาชน</label>
+          <div class="relative">
+            <i class="fa-solid fa-id-card absolute left-3 top-3.5 text-slate-400"></i>
+            <input type="password" id="idCard" required class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+          </div>
+        </div>
+        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-lg transition">
+          <i class="fa-solid fa-key mr-2"></i>เข้าสู่ระบบ
+        </button>
+      </form>
+    </section>
+
+    <!-- 2. หน้าแดชบอร์ดรายการกิจกรรม -->
+    <section id="dashboardSection" class="hidden space-y-6">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-100 gap-4">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-800">จัดการกิจกรรมนักเรียน</h2>
+          <p class="text-slate-500 text-sm">สร้างกิจกรรม กำหนดรอบสแกน และเปิดระบบบันทึกเวลาเข้าร่วม</p>
+        </div>
+        <button onclick="openCreateModal()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-4 py-2.5 rounded-xl shadow-md transition">
+          <i class="fa-solid fa-plus mr-2"></i>สร้างกิจกรรมใหม่
+        </button>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="activityContainer"></div>
+    </section>
+
+    <!-- 3. หน้าสแกนบัตร & สแกน QR Code -->
+    <section id="scanSection" class="hidden space-y-6">
+      <button onclick="backToDashboard()" class="text-indigo-600 hover:text-indigo-800 font-semibold transition">
+        <i class="fa-solid fa-arrow-left mr-2"></i>กลับหน้าหลัก
+      </button>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- การ์ดฝั่งซ้าย: ข้อมูลกิจกรรม & ยอดสะสม -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between h-fit space-y-6">
+          <div>
+            <span class="bg-indigo-100 text-indigo-700 font-bold px-3 py-1 rounded-full text-xs" id="activeActType"></span>
+            <h3 class="text-2xl font-bold text-slate-800 mt-2" id="activeActName">ชื่อกิจกรรม</h3>
+            <div class="mt-4">
+              <label class="block text-sm font-semibold mb-1 text-slate-600">รอบการเช็คปัจจุบัน</label>
+              <select id="modeOptionSelect" onchange="onModeChange('main')" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium text-slate-700">
+              </select>
+            </div>
+          </div>
+          <div class="bg-gradient-to-br from-indigo-500 to-purple-600 text-white p-6 rounded-2xl text-center shadow-lg">
+            <p class="text-sm font-medium opacity-80">ผู้เข้าร่วมวันนี้ (เรียลไทม์)</p>
+            <p class="text-5xl font-extrabold my-2" id="realtimeCounter">0</p>
+            <p class="text-xs opacity-70">คน</p>
+          </div>
+        </div>
+
+        <!-- การ์ดฝั่งขวา: สแกน -->
+        <div class="md:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
+          <div class="max-w-md mx-auto w-full text-center space-y-5 py-4">
+            <div class="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
+              <i class="fa-solid fa-bolt text-3xl text-amber-500"></i>
+            </div>
+            <div>
+              <h4 class="text-2xl font-bold text-slate-800">ระบบสแกน</h4>
+              <p class="text-sm text-slate-400 mt-1">แตะบัตร RFID, กรอกรหัสนักเรียน หรือสแกน QR Code เพื่อบันทึกเวลาได้ทันที</p>
+            </div>
+
+            <!-- ปุ่มสแกน QR ด้วยกล้อง -->
+            <button type="button" onclick="openQrScanner()" class="w-full bg-gradient-to-r from-indigo-600 to-blue-600 text-white py-3.5 rounded-2xl font-bold shadow-lg shadow-indigo-100 active:scale-[0.98] transition flex items-center justify-center gap-2">
+              <i class="fa-solid fa-qrcode text-lg"></i> สแกน QR Code นักเรียน
+            </button>
+
+            <div class="flex items-center">
+              <div class="flex-1 border-t border-slate-200"></div>
+              <span class="px-3 text-xs text-slate-400 font-medium">หรือ</span>
+              <div class="flex-1 border-t border-slate-200"></div>
+            </div>
+
+            <form onsubmit="handleAttendanceSubmit(event)" class="space-y-4">
+              <div class="relative">
+                <i class="fa-solid fa-keyboard absolute left-4 top-4 text-slate-400 text-lg"></i>
+                <input type="text" id="attendanceInput" autocomplete="off" required
+                       class="w-full pl-12 pr-4 py-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl font-mono text-xl text-center tracking-widest focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition"
+                       placeholder="แตะบัตร หรือ กรอกรหัส">
+              </div>
+              <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-2xl shadow-lg hover:shadow-indigo-200 transition transform active:scale-[0.98] flex items-center justify-center space-x-2">
+                <i class="fa-solid fa-circle-check"></i>
+                <span>ยืนยันบันทึกเวลา</span>
+              </button>
+            </form>
+
+            <p class="text-xs text-slate-400"><i class="fa-solid fa-circle-info mr-1"></i> ระบบเปิดแคชความเร็วสูง สแกนต่อเนื่องได้ทันทีโดยไม่ต้องรอโหลด</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- QR SCANNER MODAL (เต็มจอ + ซูม 2X + สแกนต่อเนื่อง) -->
+  <div id="qrModal" class="hidden fixed inset-0 bg-black z-40 flex flex-col justify-between p-4">
+    <div class="flex justify-between items-center text-white py-2">
+      <div class="min-w-0">
+        <h3 class="font-bold text-base"><i class="fa-solid fa-qrcode mr-2 text-amber-400"></i>สแกน QR Code นักเรียน</h3>
+        <p id="qrActName" class="text-xs text-slate-300 truncate"></p>
+      </div>
+      <button onclick="closeQrScanner()" class="w-10 h-10 shrink-0 rounded-full bg-white/20 text-white flex items-center justify-center text-lg active:scale-90 transition"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <div id="reader" class="w-full flex-1 rounded-2xl overflow-hidden bg-black flex items-center justify-center my-2"></div>
+
+    <div class="space-y-3 py-2">
+      <div class="flex items-center gap-2">
+        <select id="qrModeSelect" onchange="onModeChange('qr')" class="flex-1 p-2.5 bg-white/10 text-white border border-white/20 rounded-xl text-sm font-semibold focus:outline-none">
+        </select>
+        <div class="bg-white/10 border border-white/20 text-white rounded-xl px-4 py-2 text-center">
+          <span class="text-[10px] block opacity-70 leading-none">วันนี้</span>
+          <span id="qrCounter" class="font-extrabold text-lg leading-tight">0</span>
+        </div>
+        <button id="zoomToggleBtn" onclick="toggleZoom()" class="hidden bg-amber-400 text-slate-900 font-bold px-4 py-2.5 rounded-xl text-sm active:scale-95 transition">
+          <i class="fa-solid fa-magnifying-glass-plus mr-1"></i><span id="zoomLabel">2X</span>
+        </button>
+      </div>
+      <p class="text-xs text-slate-300 text-center">วาง QR Code บนบัตรนักเรียนให้อยู่ในกรอบ — สแกนต่อเนื่องได้เลย</p>
+    </div>
+  </div>
+
+  <!-- Modal แสดงข้อมูลนักเรียนเมื่อผ่าน -->
+  <div id="studentModal" class="hidden fixed inset-0 bg-emerald-600 text-white flex flex-col justify-center items-center z-[60]">
+    <div class="text-center max-w-lg px-6 flex flex-col items-center">
+      <div class="w-52 h-52 md:w-60 md:h-60 bg-white p-2 rounded-full shadow-2xl mb-5 overflow-hidden flex items-center justify-center">
+        <img id="modalStudentImg" src="" alt="Student Profile" class="w-full h-full object-cover rounded-full">
+      </div>
+      <div class="bg-white/20 px-6 py-1.5 rounded-full text-sm font-bold uppercase tracking-wider mb-3">
+        <i class="fa-solid fa-circle-check mr-1 text-yellow-300"></i> บันทึกเวลาสำเร็จ
+      </div>
+      <h2 id="modalStudentName" class="text-3xl md:text-5xl font-extrabold tracking-wide drop-shadow-md">ชื่อ-นามสกุล</h2>
+      <p id="modalStudentId" class="text-lg md:text-2xl opacity-90 mt-1 font-mono">รหัสนักเรียน: 00000000</p>
+      <p id="modalStudentClass" class="text-xl md:text-2xl font-semibold mt-1 text-yellow-200">ระดับชั้น: ปวช.X / ห้อง X</p>
+      <div class="mt-6 border-t border-white/30 pt-3 w-full">
+        <p class="text-sm opacity-80">รอบเวลา: <span id="modalCheckMode" class="font-bold underline text-base"></span></p>
+      </div>
+      <button onclick="closeStudentModal()" class="mt-6 bg-white text-emerald-700 hover:bg-slate-100 font-bold px-8 py-2.5 rounded-2xl shadow-lg text-lg transition">
+        คนถัดไป
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal แจ้งเตือนข้อผิดพลาด -->
+  <div id="errorNotificationModal" class="hidden fixed inset-0 flex flex-col justify-center items-center z-[60] text-white">
+    <div id="errorModalBg" class="absolute inset-0 z-[-1]"></div>
+    <div class="text-center max-w-lg px-6 flex flex-col items-center">
+      <div id="errorIconBox" class="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center text-5xl mb-4 shadow-xl">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <h2 id="errorModalTitle" class="text-3xl md:text-4xl font-extrabold tracking-wide drop-shadow-md mb-2">เกิดข้อผิดพลาด</h2>
+      <p id="errorModalMessage" class="text-lg md:text-xl opacity-90 font-medium bg-black/20 px-6 py-2.5 rounded-2xl max-w-md">รายละเอียด</p>
+      <div id="errorStudentDetail" class="hidden mt-4 flex flex-col items-center">
+        <div class="w-28 h-28 bg-white p-1 rounded-full overflow-hidden mb-2 shadow-lg">
+          <img id="errorStudentImg" src="" class="w-full h-full object-cover rounded-full">
+        </div>
+        <p id="errorStudentName" class="text-lg font-bold"></p>
+      </div>
+      <button onclick="closeErrorModal()" class="mt-6 bg-white text-slate-900 hover:bg-slate-100 font-bold px-8 py-2.5 rounded-2xl shadow-lg text-lg transition">
+        ตกลง (คนต่อไป)
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal สร้างกิจกรรมใหม่ -->
+  <div id="createModal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-40 p-4">
+    <div class="bg-white w-full max-w-md p-6 rounded-2xl shadow-2xl relative">
+      <button onclick="closeCreateModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+      <h3 class="text-xl font-bold text-slate-800 mb-4"><i class="fa-solid fa-folder-plus mr-2 text-emerald-500"></i>สร้างกิจกรรมบันทึกเวลา</h3>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-semibold mb-1 text-slate-600">ชื่อกิจกรรม</label>
+          <input type="text" id="newActName" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <div>
+          <label class="block text-sm font-semibold mb-1 text-slate-600">ประเภทการเช็ค</label>
+          <select id="newActType" onchange="toggleTypeConfig()" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="1">1. แบบครั้งเดียวจบ</option>
+            <option value="2">2. เช็คแบบ 2 ครั้ง (เข้า-ออก)</option>
+            <option value="3">3. เช็คเวลาละหมาด</option>
+          </select>
+        </div>
+        <div id="prayerConfig" class="hidden border border-slate-100 p-3 rounded-xl bg-slate-50 space-y-2">
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center space-x-2 text-sm text-slate-700"><input type="checkbox" value="ซุบฮิ" checked> <span>ซุบฮิ</span></label>
+            <label class="flex items-center space-x-2 text-sm text-slate-700"><input type="checkbox" value="ซุฮริ" checked> <span>ซุฮริ</span></label>
+            <label class="flex items-center space-x-2 text-sm text-slate-700"><input type="checkbox" value="อัศริ" checked> <span>อัศริ</span></label>
+            <label class="flex items-center space-x-2 text-sm text-slate-700"><input type="checkbox" value="มัฆริบ" checked> <span>มัฆริบ</span></label>
+            <label class="flex items-center space-x-2 text-sm text-slate-700"><input type="checkbox" value="อีชา" checked> <span>อีชา</span></label>
+          </div>
+        </div>
+        <button onclick="submitCreateActivity()" class="w-full bg-indigo-600 text-white font-bold py-2.5 rounded-xl shadow-md hover:bg-indigo-700 transition">ยืนยันสร้างกิจกรรม</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ** ใส่ Web App URL ของ Code.gs (ระบบบันทึกกิจกรรม) ที่นี่ **
+    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwuTNiJ3_fpWNfFg8C00SpG6d_wT0QVoK5nLttjGEEPcUsZ_ShtrjXVxAbmlu2NmC_q/exec";
+
+    // ---------- State ----------
+    let currentTeacher = null;
+    let authToken = null;
+    let activitiesList = [];
+    let activeActivity = null;
+    let autoCloseTimeout = null;
+    let errorCloseTimeout = null;
+    let focusKeepInterval = null;
+
+    let cachedStudents = {};
+    let cachedTodayScanned = {};
+    let todayTotalCount = 0;
+
+    // QR scanner state
+    let html5QrCode = null;
+    let isCameraActive = false;
+    let isCameraStarting = false;
+    let scanLockUntil = 0;
+    let lastScanText = '';
+    let lastScanTime = 0;
+    let zoomFeature = null;
+    let currentZoom = 2;
+
+    // ---------- Sound ----------
+    let synth = null;
+    function getSynth() {
+      if (!synth) synth = new Tone.Synth().toDestination();
+      return synth;
+    }
+    function playSuccessSound() {
+      try { getSynth().triggerAttackRelease("E6", "0.08"); } catch (e) { console.log("Audio error:", e); }
+    }
+    function playFailSound() {
+      try {
+        const s = getSynth();
+        const now = Tone.now();
+        s.triggerAttackRelease("C4", "0.1", now);
+        s.triggerAttackRelease("C4", "0.1", now + 0.15);
+      } catch (e) { console.log("Audio error:", e); }
+    }
+
+    // ---------- API ----------
+    async function apiCall(action, payload) {
+      if (!GAS_WEB_APP_URL || GAS_WEB_APP_URL.indexOf('http') !== 0) {
+        return { success: false, message: 'ยังไม่ได้ตั้งค่า GAS_WEB_APP_URL ในไฟล์ index.html' };
+      }
+      try {
+        const body = Object.assign({ action: action, token: authToken }, payload || {});
+        const response = await fetch(GAS_WEB_APP_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(body)
+        });
+        const text = await response.text();
+        const res = JSON.parse(text);
+        if (res && res.code === 'AUTH') {
+          handleAuthExpired(res.message);
+        }
+        return res;
+      } catch (err) {
+        console.error("API Call Error:", err);
+        return { success: false, message: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้' };
+      }
+    }
+
+    function handleAuthExpired(message) {
+      if (!currentTeacher && !authToken) return;
+      resetToLogin();
+      Swal.fire({ icon: 'warning', title: 'เซสชันหมดอายุ', text: message || 'กรุณาเข้าสู่ระบบใหม่' });
+    }
+
+    // ---------- Init ----------
+    window.addEventListener('DOMContentLoaded', () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlTeacherId = (params.get('teacherId') || '').trim();
+
+      if (urlTeacherId) {
+        executeAutoLogin(urlTeacherId);
+        return;
+      }
+
+      const savedTeacher = localStorage.getItem('sis_teacherName');
+      const savedToken = localStorage.getItem('sis_token');
+      if (savedTeacher && savedToken) {
+        currentTeacher = savedTeacher;
+        authToken = savedToken;
+        showDashboardView(currentTeacher);
+      }
+    });
+
+    function saveSession(res) {
+      currentTeacher = res.teacherName;
+      authToken = res.token;
+      localStorage.setItem('sis_teacherName', currentTeacher);
+      localStorage.setItem('sis_token', authToken);
+    }
+
+    function cleanUrl() {
+      if (window.history.replaceState) {
+        const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+        window.history.replaceState({ path: newUrl }, '', newUrl);
+      }
+    }
+
+    async function executeAutoLogin(teacherId) {
+      Swal.fire({ title: 'กำลังเข้าสู่ระบบอัตโนมัติ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      const res = await apiCall('login', { teacherId: teacherId, idCard: null });
+      if (res.success) {
+        saveSession(res);
+        cleanUrl();
+        Swal.fire({ icon: 'success', title: 'ยินดีต้อนรับอัตโนมัติ', text: 'เข้าใช้งานสิทธิ์: ' + res.position, timer: 1500, showConfirmButton: false });
+        showDashboardView(currentTeacher);
+      } else {
+        Swal.fire({ icon: 'error', title: 'Auto-Login ล้มเหลว', text: res.message });
+      }
+    }
+
+    function showDashboardView(teacherName) {
+      document.getElementById('teacherNameDisplay').innerText = "สวัสดี, " + teacherName;
+      document.getElementById('userInfo').classList.remove('hidden');
+      document.getElementById('loginSection').classList.add('hidden');
+      document.getElementById('dashboardSection').classList.remove('hidden');
+      loadActivities();
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const teacherId = document.getElementById('teacherId').value;
+      const idCard = document.getElementById('idCard').value;
+      Swal.fire({ title: 'กำลังตรวจสอบสิทธิ์...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+      const res = await apiCall('login', { teacherId: teacherId, idCard: idCard });
+      if (res.success) {
+        saveSession(res);
+        document.getElementById('idCard').value = '';
+        Swal.fire({ icon: 'success', title: 'เข้าสู่ระบบสำเร็จ', timer: 1500, showConfirmButton: false });
+        showDashboardView(currentTeacher);
+      } else {
+        Swal.fire({ icon: 'error', title: 'ผิดพลาด', text: res.message });
+      }
+    }
+
+    function resetToLogin() {
+      closeQrScanner();
+      currentTeacher = null;
+      authToken = null;
+      activeActivity = null;
+      localStorage.removeItem('sis_teacherName');
+      localStorage.removeItem('sis_token');
+      document.getElementById('userInfo').classList.add('hidden');
+      document.getElementById('dashboardSection').classList.add('hidden');
+      document.getElementById('scanSection').classList.add('hidden');
+      document.getElementById('loginSection').classList.remove('hidden');
+      if (focusKeepInterval) { clearInterval(focusKeepInterval); focusKeepInterval = null; }
+      closeStudentModal();
+      closeErrorModal();
+      cleanUrl();
+    }
+
+    function logout() { resetToLogin(); }
+
+    // ---------- Activities ----------
+    async function loadActivities() {
+      const container = document.getElementById('activityContainer');
+      container.innerHTML = `<div class="col-span-full text-center py-8 text-slate-400"><i class="fa-solid fa-spinner fa-spin mr-2"></i>กำลังโหลดกิจกรรม...</div>`;
+
+      const res = await apiCall('getActivities');
+      if (!res.success) {
+        if (res.code === 'AUTH') return;
+        container.innerHTML = `<div class="col-span-full text-center py-8 text-rose-500">${escapeHtml(res.message || 'โหลดกิจกรรมไม่สำเร็จ')}</div>`;
+        return;
+      }
+
+      activitiesList = res.data || [];
+      container.innerHTML = '';
+      if (activitiesList.length === 0) {
+        container.innerHTML = `<div class="col-span-full text-center py-8 text-slate-400">ยังไม่มีการสร้างกิจกรรมในระบบ</div>`;
+        return;
+      }
+
+      activitiesList.forEach((act, idx) => {
+        const card = document.createElement('div');
+        card.className = "bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between";
+        card.innerHTML = `
+          <div>
+            <div class="flex justify-between items-start">
+              <span class="text-xs font-bold bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full">ระบบเช็คกิจกรรม</span>
+              <button data-del="${idx}" class="text-slate-300 hover:text-red-500 transition"><i class="fa-solid fa-trash-can"></i></button>
+            </div>
+            <h4 class="text-xl font-bold text-slate-800 mt-2 act-name"></h4>
+          </div>
+          <button data-go="${idx}" class="w-full mt-4 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-bold py-2 rounded-xl text-sm transition text-center">
+            <i class="fa-solid fa-bolt mr-2 text-amber-500"></i> เข้าสู่หน้าสแกน
+          </button>
+        `;
+        card.querySelector('.act-name').textContent = act.name;
+        card.querySelector('[data-del]').addEventListener('click', () => confirmDeleteActivity(act.name));
+        card.querySelector('[data-go]').addEventListener('click', () => goToScanDashboard(act));
+        container.appendChild(card);
+      });
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    function openCreateModal() { document.getElementById('createModal').classList.remove('hidden'); }
+    function closeCreateModal() { document.getElementById('createModal').classList.add('hidden'); }
+
+    function toggleTypeConfig() {
+      const type = document.getElementById('newActType').value;
+      document.getElementById('prayerConfig').classList.toggle('hidden', type !== '3');
+    }
+
+    async function submitCreateActivity() {
+      const name = document.getElementById('newActName').value.trim();
+      const type = document.getElementById('newActType').value;
+      if (!name) return Swal.fire({ icon: 'warning', text: 'กรุณากรอกชื่อกิจกรรม' });
+
+      let options = (type === '1') ? ['บันทึกเวลา'] : (type === '2') ? ['เวลาเข้า', 'เวลาออก'] : [];
+      if (type === '3') {
+        document.querySelectorAll('#prayerConfig input:checked').forEach(cb => options.push(cb.value));
+        if (options.length === 0) return Swal.fire({ icon: 'warning', text: 'กรุณาเลือกเวลาละหมาด' });
+      }
+
+      Swal.fire({ title: 'กำลังสร้างกิจกรรม...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+      const res = await apiCall('createActivity', { name: name, type: type, options: options });
+      if (res.success) {
+        Swal.close();
+        closeCreateModal();
+        document.getElementById('newActName').value = '';
+        loadActivities();
+      } else if (res.code !== 'AUTH') {
+        playFailSound();
+        Swal.fire({ icon: 'error', title: 'สร้างกิจกรรมไม่สำเร็จ', text: res.message || 'พบชื่อกิจกรรมซ้ำในระบบ' });
+      }
+    }
+
+    function confirmDeleteActivity(name) {
+      Swal.fire({
+        title: 'ลบกิจกรรม?',
+        text: `แผ่นงาน "${name}" จะถูกลบถาวร`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#EF4444',
+        confirmButtonText: 'ยืนยันลบ',
+        cancelButtonText: 'ยกเลิก'
+      }).then(async (r) => {
+        if (!r.isConfirmed) return;
+        const res = await apiCall('deleteActivity', { name: name });
+        if (res.success) {
+          loadActivities();
+        } else if (res.code !== 'AUTH') {
+          Swal.fire({ icon: 'error', title: 'ลบไม่สำเร็จ', text: res.message });
+        }
+      });
+    }
+
+    // ---------- Scan dashboard ----------
+    async function goToScanDashboard(act) {
+      const config = (act.config || '').split(',').map(s => s.trim()).filter(Boolean);
+      activeActivity = { name: act.name, type: act.type, config: config };
+
+      document.getElementById('dashboardSection').classList.add('hidden');
+      document.getElementById('scanSection').classList.remove('hidden');
+      document.getElementById('activeActName').innerText = act.name;
+      document.getElementById('qrActName').innerText = act.name;
+      document.getElementById('activeActType').innerText = 'ประเภท: ' + (act.type == '1' ? 'ครั้งเดียว' : act.type == '2' ? 'เข้า-ออก' : 'ละหมาด');
+
+      ['modeOptionSelect', 'qrModeSelect'].forEach(id => {
+        const sel = document.getElementById(id);
+        sel.innerHTML = '';
+        config.forEach(opt => {
+          const o = document.createElement('option');
+          o.value = opt;
+          o.textContent = opt;
+          sel.appendChild(o);
+        });
+      });
+
+      Swal.fire({
+        title: 'กำลังเชื่อมต่อระบบความเร็วสูง...',
+        text: 'กำลังซิงค์ฐานข้อมูลนักเรียนเข้าสู่หน่วยความจำ',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+
+      const res = await apiCall('getPreloadData', { activityName: act.name });
+      Swal.close();
+
+      if (res.success) {
+        cachedStudents = res.studentMap || {};
+        cachedTodayScanned = res.todayScannedMap || {};
+        todayTotalCount = res.todayCount || 0;
+        updateCounter();
+
+        document.getElementById('attendanceInput').value = '';
+        setTimeout(focusAttendanceInput, 200);
+        if (!focusKeepInterval) {
+          focusKeepInterval = setInterval(focusAttendanceInput, 1000);
+        }
+      } else if (res.code !== 'AUTH') {
+        Swal.fire({ icon: 'error', title: 'โหลดข้อมูลไม่สำเร็จ', text: res.message });
+        backToDashboard();
+      }
+    }
+
+    function updateCounter() {
+      document.getElementById('realtimeCounter').innerText = todayTotalCount;
+      document.getElementById('qrCounter').innerText = todayTotalCount;
+    }
+
+    function onModeChange(source) {
+      const main = document.getElementById('modeOptionSelect');
+      const qr = document.getElementById('qrModeSelect');
+      if (source === 'main') qr.value = main.value;
+      else main.value = qr.value;
+      if (source === 'main') main.blur();
+    }
+
+    function backToDashboard() {
+      closeQrScanner();
+      document.getElementById('scanSection').classList.add('hidden');
+      document.getElementById('dashboardSection').classList.remove('hidden');
+      if (focusKeepInterval) {
+        clearInterval(focusKeepInterval);
+        focusKeepInterval = null;
+      }
+      loadActivities();
+    }
+
+    // ---------- QR Scanner (เต็มจอ + ซูม 2X + สแกนต่อเนื่อง) ----------
+    function openQrScanner() {
+      if (!activeActivity || isCameraActive || isCameraStarting) return;
+      isCameraStarting = true;
+
+      document.getElementById('qrModal').classList.remove('hidden');
+      document.getElementById('qrModeSelect').value = document.getElementById('modeOptionSelect').value;
+      document.getElementById('qrCounter').innerText = todayTotalCount;
+      document.getElementById('zoomToggleBtn').classList.add('hidden');
+
+      const qrBoxSize = Math.floor(Math.min(window.innerWidth * 0.7, 300));
+      html5QrCode = new Html5Qrcode("reader");
+
+      const config = {
+        fps: 15,
+        qrbox: { width: qrBoxSize, height: qrBoxSize },
+        aspectRatio: 1.0
+      };
+
+      html5QrCode.start(
+        { facingMode: "environment" },
+        config,
+        onScanSuccess,
+        () => {}
+      ).then(() => {
+        isCameraActive = true;
+        isCameraStarting = false;
+        setupZoom();
+      }).catch(err => {
+        isCameraStarting = false;
+        isCameraActive = false;
+        console.error("Camera error:", err);
+        document.getElementById('qrModal').classList.add('hidden');
+        Swal.fire({
+          icon: 'error',
+          title: 'ไม่สามารถเปิดกล้องได้',
+          text: 'กรุณาอนุญาตให้เว็บเข้าถึงกล้องถ่ายรูป หรือลองเปิดผ่านเบราว์เซอร์หลัก (เช่น Chrome/Safari)'
+        });
+      });
+    }
+
+    function setupZoom() {
+      zoomFeature = null;
+      try {
+        const caps = html5QrCode.getRunningTrackCameraCapabilities();
+        if (caps && caps.zoomFeature && caps.zoomFeature().isSupported()) {
+          zoomFeature = caps.zoomFeature();
+          currentZoom = Math.min(2, zoomFeature.max());
+          applyZoom(currentZoom);
+          document.getElementById('zoomToggleBtn').classList.remove('hidden');
+          document.getElementById('zoomLabel').innerText = (currentZoom >= 2 ? '2X' : '1X');
+          return;
+        }
+      } catch (e) {
+        console.log("Zoom feature not available:", e);
+      }
+      // fallback: applyVideoConstraints
+      try {
+        html5QrCode.applyVideoConstraints({ advanced: [{ zoom: 2 }] })
+          .then(() => {
+            currentZoom = 2;
+            zoomFeature = { fallback: true };
+            document.getElementById('zoomToggleBtn').classList.remove('hidden');
+            document.getElementById('zoomLabel').innerText = '2X';
+          })
+          .catch(() => {});
+      } catch (e) {
+        console.log("Zoom not supported on this device/browser", e);
+      }
+    }
+
+    function applyZoom(value) {
+      try {
+        if (zoomFeature && zoomFeature.fallback) {
+          html5QrCode.applyVideoConstraints({ advanced: [{ zoom: value }] }).catch(() => {});
+        } else if (zoomFeature) {
+          zoomFeature.apply(value);
+        }
+      } catch (e) { console.log("Apply zoom error:", e); }
+    }
+
+    function toggleZoom() {
+      if (!zoomFeature) return;
+      currentZoom = (currentZoom >= 2) ? 1 : 2;
+      if (zoomFeature.max && currentZoom > zoomFeature.max()) currentZoom = zoomFeature.max();
+      applyZoom(currentZoom);
+      document.getElementById('zoomLabel').innerText = (currentZoom >= 2 ? '2X' : '1X');
+    }
+
+    function closeQrScanner() {
+      const modal = document.getElementById('qrModal');
+      modal.classList.add('hidden');
+      zoomFeature = null;
+      if (html5QrCode && isCameraActive) {
+        const scanner = html5QrCode;
+        isCameraActive = false;
+        scanner.stop()
+          .then(() => { try { scanner.clear(); } catch (e) {} })
+          .catch(() => {});
+      }
+      isCameraStarting = false;
+      setTimeout(focusAttendanceInput, 200);
+    }
+
+    function onScanSuccess(decodedText) {
+      if (!decodedText) return;
+      const text = decodedText.trim();
+      const now = Date.now();
+
+      if (now < scanLockUntil) return;                              // กำลังแสดงผลคนก่อนหน้า
+      if (text === lastScanText && now - lastScanTime < 4000) return; // กันสแกนรหัสเดิมรัว ๆ
+
+      lastScanText = text;
+      lastScanTime = now;
+      scanLockUntil = now + 1500;
+      processStudentAttendance(text);
+    }
+
+    // ---------- Input / RFID ----------
+    function focusAttendanceInput() {
+      const input = document.getElementById('attendanceInput');
+      const select = document.getElementById('modeOptionSelect');
+      if (document.activeElement === select) return;
+
+      const isScanVisible = !document.getElementById('scanSection').classList.contains('hidden');
+      const isQrHidden = document.getElementById('qrModal').classList.contains('hidden');
+      const isStudentModalHidden = document.getElementById('studentModal').classList.contains('hidden');
+      const isErrorModalHidden = document.getElementById('errorNotificationModal').classList.contains('hidden');
+
+      if (input && isScanVisible && isQrHidden && isStudentModalHidden && isErrorModalHidden) {
+        input.focus();
+      }
+    }
+
+    function handleAttendanceSubmit(e) {
+      e.preventDefault();
+      const inputField = document.getElementById('attendanceInput');
+      const scanValue = inputField.value.trim();
+      if (!scanValue) return;
+
+      inputField.value = '';
+      processStudentAttendance(scanValue);
+    }
+
+    // ---------- บันทึกเวลา ----------
+    function processStudentAttendance(scanValue) {
+      const modeOption = document.getElementById('modeOptionSelect').value;
+
+      const student = cachedStudents[scanValue];
+      if (!student) {
+        showErrorModal({
+          status: "NOT_FOUND",
+          message: "ไม่พบรหัสหรือบัตร RFID นี้ในฐานข้อมูลนักเรียน"
+        });
+        return;
+      }
+
+      if (!cachedTodayScanned[modeOption]) {
+        cachedTodayScanned[modeOption] = {};
+      }
+
+      if (cachedTodayScanned[modeOption][student.id]) {
+        showErrorModal({
+          status: "DUPLICATE",
+          message: "นักเรียนรายนี้ได้บันทึกเวลาในรอบ " + modeOption + " ไปแล้วครับ",
+          student: student
+        });
+        return;
+      }
+
+      cachedTodayScanned[modeOption][student.id] = true;
+      todayTotalCount++;
+      updateCounter();
+
+      showStudentModal(student, modeOption);
+
+      // บันทึกเบื้องหลัง
+      const teacherAtScan = currentTeacher;
+      apiCall('saveAttendance', {
+        activityName: activeActivity.name,
+        student: student,
+        modeOption: modeOption
+      }).then(res => {
+        if (res && res.success) return;
+        if (res && res.code === 'AUTH') return;
+        // บันทึกไม่สำเร็จ -> คืนค่าเพื่อให้สแกนใหม่ได้
+        console.error("บันทึกเบื้องหลังขัดข้อง:", res && res.message);
+        if (cachedTodayScanned[modeOption]) delete cachedTodayScanned[modeOption][student.id];
+        todayTotalCount = Math.max(0, todayTotalCount - 1);
+        updateCounter();
+        playFailSound();
+        Swal.fire({
+          toast: true,
+          position: 'top',
+          icon: 'error',
+          title: 'บันทึกไม่สำเร็จ: ' + student.name,
+          text: 'กรุณาสแกนใหม่อีกครั้ง',
+          showConfirmButton: false,
+          timer: 4000
+        });
+      });
+    }
+
+    function showStudentModal(student, checkMode) {
+      if (autoCloseTimeout) clearTimeout(autoCloseTimeout);
+      closeErrorModal();
+      playSuccessSound();
+
+      document.getElementById('modalStudentImg').src = student.imageUrl;
+      document.getElementById('modalStudentName').innerText = student.name;
+      document.getElementById('modalStudentId').innerText = "รหัสนักเรียน: " + student.id;
+      document.getElementById('modalStudentClass').innerText = "ระดับชั้น: " + student.level + "/" + student.room;
+      document.getElementById('modalCheckMode').innerText = checkMode;
+
+      document.getElementById('studentModal').classList.remove('hidden');
+      autoCloseTimeout = setTimeout(() => { closeStudentModal(); }, 1800);
+    }
+
+    function closeStudentModal() {
+      document.getElementById('studentModal').classList.add('hidden');
+      focusAttendanceInput();
+    }
+
+    function showErrorModal(res) {
+      if (errorCloseTimeout) clearTimeout(errorCloseTimeout);
+      closeStudentModal();
+      playFailSound();
+
+      const bg = document.getElementById('errorModalBg');
+      const iconBox = document.getElementById('errorIconBox');
+      const title = document.getElementById('errorModalTitle');
+      const msg = document.getElementById('errorModalMessage');
+      const studentDetail = document.getElementById('errorStudentDetail');
+
+      if (res.status === "DUPLICATE") {
+        bg.className = "absolute inset-0 z-[-1] bg-amber-500";
+        iconBox.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i>';
+        title.innerText = "สแกนซ้ำซ้อน!";
+        msg.innerText = res.message;
+
+        if (res.student) {
+          document.getElementById('errorStudentImg').src = res.student.imageUrl;
+          document.getElementById('errorStudentName').innerText = res.student.name;
+          studentDetail.classList.remove('hidden');
+        }
+      } else {
+        bg.className = "absolute inset-0 z-[-1] bg-rose-600";
+        iconBox.innerHTML = '<i class="fa-solid fa-user-slash"></i>';
+        title.innerText = "ไม่ผ่าน! ไม่พบข้อมูล";
+        msg.innerText = res.message;
+        studentDetail.classList.add('hidden');
+      }
+
+      document.getElementById('errorNotificationModal').classList.remove('hidden');
+      errorCloseTimeout = setTimeout(() => { closeErrorModal(); }, 2000);
+    }
+
+    function closeErrorModal() {
+      document.getElementById('errorNotificationModal').classList.add('hidden');
+      focusAttendanceInput();
+    }
+  </script>
+</body>
+</html>
