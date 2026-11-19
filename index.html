@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบบันทึกกิจกรรมนักเรียน - SIS</title>
+  <title>ระบบบันทึกกิจกรรมนักเรียน - MUTEC</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -26,7 +26,7 @@
   <nav class="bg-indigo-600 text-white shadow-md px-6 py-4 flex justify-between items-center">
     <div class="flex items-center space-x-3">
       <i class="fa-solid fa-id-card-clip text-2xl"></i>
-      <span class="text-xl font-bold tracking-wide">Activity System</span>
+      <span class="text-xl font-bold tracking-wide">MUTEC Activity System</span>
     </div>
     <div id="userInfo" class="hidden flex items-center space-x-4">
       <span id="teacherNameDisplay" class="text-sm font-medium"></span>
@@ -82,7 +82,7 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="activityContainer"></div>
     </section>
 
-    <!-- 3. หน้าสแกนบัตร & สแกน QR Code -->
+    <!-- 3. หน้าสแกนบัตร (Instant High-Speed Scan) -->
     <section id="scanSection" class="hidden space-y-6">
       <button onclick="backToDashboard()" class="text-indigo-600 hover:text-indigo-800 font-semibold transition">
         <i class="fa-solid fa-arrow-left mr-2"></i>กลับหน้าหลัก
@@ -107,9 +107,9 @@
           </div>
         </div>
 
-        <!-- การ์ดฝั่งขวา: สแกน -->
-        <div class="md:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
-          <div class="max-w-md mx-auto w-full text-center space-y-5 py-4">
+        <!-- การ์ดฝั่งขวา: ช่องสแกนรับข้อมูล -->
+        <div class="md:col-span-2 bg-white p-8 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-center">
+          <div class="max-w-md mx-auto w-full text-center space-y-5">
             <div class="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
               <i class="fa-solid fa-bolt text-3xl text-amber-500"></i>
             </div>
@@ -118,9 +118,9 @@
               <p class="text-sm text-slate-400 mt-1">แตะบัตร RFID, กรอกรหัสนักเรียน หรือสแกน QR Code เพื่อบันทึกเวลาได้ทันที</p>
             </div>
 
-            <!-- ปุ่มสแกน QR ด้วยกล้อง -->
+            <!-- ปุ่มเปิดกล้องสแกน QR -->
             <button type="button" onclick="openQrScanner()" class="w-full bg-gradient-to-r from-indigo-600 to-blue-600 text-white py-3.5 rounded-2xl font-bold shadow-lg shadow-indigo-100 active:scale-[0.98] transition flex items-center justify-center gap-2">
-              <i class="fa-solid fa-qrcode text-lg"></i> สแกน QR Code นักเรียน
+              <i class="fa-solid fa-qrcode text-lg"></i> เปิดกล้องสแกน QR Code นักเรียน
             </button>
 
             <div class="flex items-center">
@@ -164,7 +164,7 @@
 
     <div class="space-y-3 py-2">
       <div class="flex items-center gap-2">
-        <select id="qrModeSelect" onchange="onModeChange('qr')" class="flex-1 p-2.5 bg-white/10 text-white border border-white/20 rounded-xl text-sm font-semibold focus:outline-none">
+        <select id="qrModeSelect" onchange="onModeChange('qr')" class="flex-1 min-w-0 p-2.5 bg-white/10 text-white border border-white/20 rounded-xl text-sm font-semibold focus:outline-none">
         </select>
         <div class="bg-white/10 border border-white/20 text-white rounded-xl px-4 py-2 text-center">
           <span class="text-[10px] block opacity-70 leading-none">วันนี้</span>
@@ -178,8 +178,8 @@
     </div>
   </div>
 
-  <!-- Modal แสดงข้อมูลนักเรียนเมื่อผ่าน -->
-  <div id="studentModal" class="hidden fixed inset-0 bg-emerald-600 text-white flex flex-col justify-center items-center z-[60]">
+  <!-- Modal แสดงข้อมูลนักเรียนเมื่อผ่าน (สีเขียว เต็มจอ) -->
+  <div id="studentModal" class="hidden fixed inset-0 bg-emerald-600 text-white flex flex-col justify-center items-center z-50">
     <div class="text-center max-w-lg px-6 flex flex-col items-center">
       <div class="w-52 h-52 md:w-60 md:h-60 bg-white p-2 rounded-full shadow-2xl mb-5 overflow-hidden flex items-center justify-center">
         <img id="modalStudentImg" src="" alt="Student Profile" class="w-full h-full object-cover rounded-full">
@@ -199,8 +199,8 @@
     </div>
   </div>
 
-  <!-- Modal แจ้งเตือนข้อผิดพลาด -->
-  <div id="errorNotificationModal" class="hidden fixed inset-0 flex flex-col justify-center items-center z-[60] text-white">
+  <!-- Modal แจ้งเตือนข้อผิดพลาด / สแกนซ้ำ -->
+  <div id="errorNotificationModal" class="hidden fixed inset-0 flex flex-col justify-center items-center z-50 text-white">
     <div id="errorModalBg" class="absolute inset-0 z-[-1]"></div>
     <div class="text-center max-w-lg px-6 flex flex-col items-center">
       <div id="errorIconBox" class="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center text-5xl mb-4 shadow-xl">
@@ -253,26 +253,26 @@
   </div>
 
   <script>
-    // ** ใส่ Web App URL ของ Code.gs (ระบบบันทึกกิจกรรม) ที่นี่ **
+    // ** Web App URL ของ Code.gs (ระบบบันทึกกิจกรรม) **
     const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwuTNiJ3_fpWNfFg8C00SpG6d_wT0QVoK5nLttjGEEPcUsZ_ShtrjXVxAbmlu2NmC_q/exec";
 
     // ---------- State ----------
     let currentTeacher = null;
     let authToken = null;
-    let activitiesList = [];
     let activeActivity = null;
     let autoCloseTimeout = null;
     let errorCloseTimeout = null;
     let focusKeepInterval = null;
 
+    // แคชข้อมูลนักเรียนและการสแกนวันนี้ไว้ในหน่วยความจำ
     let cachedStudents = {};
     let cachedTodayScanned = {};
     let todayTotalCount = 0;
 
-    // QR scanner state
+    // สถานะกล้องสแกน QR
     let html5QrCode = null;
     let isCameraActive = false;
-    let isCameraStarting = false;
+    let cameraStartPromise = null;
     let scanLockUntil = 0;
     let lastScanText = '';
     let lastScanTime = 0;
@@ -299,9 +299,6 @@
 
     // ---------- API ----------
     async function apiCall(action, payload) {
-      if (!GAS_WEB_APP_URL || GAS_WEB_APP_URL.indexOf('http') !== 0) {
-        return { success: false, message: 'ยังไม่ได้ตั้งค่า GAS_WEB_APP_URL ในไฟล์ index.html' };
-      }
       try {
         const body = Object.assign({ action: action, token: authToken }, payload || {});
         const response = await fetch(GAS_WEB_APP_URL, {
@@ -330,15 +327,15 @@
     // ---------- Init ----------
     window.addEventListener('DOMContentLoaded', () => {
       const params = new URLSearchParams(window.location.search);
-      const urlTeacherId = (params.get('teacherId') || '').trim();
+      const urlTeacherId = (params.get('id') || '').trim();
 
       if (urlTeacherId) {
         executeAutoLogin(urlTeacherId);
         return;
       }
 
-      const savedTeacher = localStorage.getItem('sis_teacherName');
-      const savedToken = localStorage.getItem('sis_token');
+      const savedTeacher = localStorage.getItem('mutec_teacherName');
+      const savedToken = localStorage.getItem('mutec_token');
       if (savedTeacher && savedToken) {
         currentTeacher = savedTeacher;
         authToken = savedToken;
@@ -349,8 +346,8 @@
     function saveSession(res) {
       currentTeacher = res.teacherName;
       authToken = res.token;
-      localStorage.setItem('sis_teacherName', currentTeacher);
-      localStorage.setItem('sis_token', authToken);
+      localStorage.setItem('mutec_teacherName', currentTeacher);
+      localStorage.setItem('mutec_token', authToken);
     }
 
     function cleanUrl() {
@@ -403,8 +400,8 @@
       currentTeacher = null;
       authToken = null;
       activeActivity = null;
-      localStorage.removeItem('sis_teacherName');
-      localStorage.removeItem('sis_token');
+      localStorage.removeItem('mutec_teacherName');
+      localStorage.removeItem('mutec_token');
       document.getElementById('userInfo').classList.add('hidden');
       document.getElementById('dashboardSection').classList.add('hidden');
       document.getElementById('scanSection').classList.add('hidden');
@@ -429,31 +426,31 @@
         return;
       }
 
-      activitiesList = res.data || [];
+      const list = res.data || [];
       container.innerHTML = '';
-      if (activitiesList.length === 0) {
+      if (list.length === 0) {
         container.innerHTML = `<div class="col-span-full text-center py-8 text-slate-400">ยังไม่มีการสร้างกิจกรรมในระบบ</div>`;
         return;
       }
 
-      activitiesList.forEach((act, idx) => {
+      list.forEach(act => {
         const card = document.createElement('div');
         card.className = "bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between";
         card.innerHTML = `
           <div>
             <div class="flex justify-between items-start">
               <span class="text-xs font-bold bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full">ระบบเช็คกิจกรรม</span>
-              <button data-del="${idx}" class="text-slate-300 hover:text-red-500 transition"><i class="fa-solid fa-trash-can"></i></button>
+              <button class="btn-del text-slate-300 hover:text-red-500 transition"><i class="fa-solid fa-trash-can"></i></button>
             </div>
-            <h4 class="text-xl font-bold text-slate-800 mt-2 act-name"></h4>
+            <h4 class="act-name text-xl font-bold text-slate-800 mt-2"></h4>
           </div>
-          <button data-go="${idx}" class="w-full mt-4 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-bold py-2 rounded-xl text-sm transition text-center">
+          <button class="btn-go w-full mt-4 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-bold py-2 rounded-xl text-sm transition text-center">
             <i class="fa-solid fa-bolt mr-2 text-amber-500"></i> เข้าสู่หน้าสแกน
           </button>
         `;
         card.querySelector('.act-name').textContent = act.name;
-        card.querySelector('[data-del]').addEventListener('click', () => confirmDeleteActivity(act.name));
-        card.querySelector('[data-go]').addEventListener('click', () => goToScanDashboard(act));
+        card.querySelector('.btn-del').addEventListener('click', () => confirmDeleteActivity(act.name));
+        card.querySelector('.btn-go').addEventListener('click', () => goToScanDashboard(act.name, act.type, act.config));
         container.appendChild(card);
       });
     }
@@ -515,16 +512,16 @@
       });
     }
 
-    // ---------- Scan dashboard ----------
-    async function goToScanDashboard(act) {
-      const config = (act.config || '').split(',').map(s => s.trim()).filter(Boolean);
-      activeActivity = { name: act.name, type: act.type, config: config };
+    // ---------- โหลดฐานข้อมูลความเร็วสูงเข้าสู่หน่วยความจำ (Preload Cache) ----------
+    async function goToScanDashboard(name, type, configStr) {
+      const config = (configStr || '').split(',').map(s => s.trim()).filter(Boolean);
+      activeActivity = { name, type, config };
 
       document.getElementById('dashboardSection').classList.add('hidden');
       document.getElementById('scanSection').classList.remove('hidden');
-      document.getElementById('activeActName').innerText = act.name;
-      document.getElementById('qrActName').innerText = act.name;
-      document.getElementById('activeActType').innerText = 'ประเภท: ' + (act.type == '1' ? 'ครั้งเดียว' : act.type == '2' ? 'เข้า-ออก' : 'ละหมาด');
+      document.getElementById('activeActName').innerText = name;
+      document.getElementById('qrActName').innerText = name;
+      document.getElementById('activeActType').innerText = 'ประเภท: ' + (type == '1' ? 'ครั้งเดียว' : type == '2' ? 'เข้า-ออก' : 'ละหมาด');
 
       ['modeOptionSelect', 'qrModeSelect'].forEach(id => {
         const sel = document.getElementById(id);
@@ -544,7 +541,7 @@
         didOpen: () => Swal.showLoading()
       });
 
-      const res = await apiCall('getPreloadData', { activityName: act.name });
+      const res = await apiCall('getPreloadData', { activityName: name });
       Swal.close();
 
       if (res.success) {
@@ -554,7 +551,7 @@
         updateCounter();
 
         document.getElementById('attendanceInput').value = '';
-        setTimeout(focusAttendanceInput, 200);
+        setTimeout(focusAttendanceInput, 300);
         if (!focusKeepInterval) {
           focusKeepInterval = setInterval(focusAttendanceInput, 1000);
         }
@@ -572,26 +569,19 @@
     function onModeChange(source) {
       const main = document.getElementById('modeOptionSelect');
       const qr = document.getElementById('qrModeSelect');
-      if (source === 'main') qr.value = main.value;
-      else main.value = qr.value;
-      if (source === 'main') main.blur();
-    }
-
-    function backToDashboard() {
-      closeQrScanner();
-      document.getElementById('scanSection').classList.add('hidden');
-      document.getElementById('dashboardSection').classList.remove('hidden');
-      if (focusKeepInterval) {
-        clearInterval(focusKeepInterval);
-        focusKeepInterval = null;
+      if (source === 'main') {
+        qr.value = main.value;
+        main.blur();
+      } else {
+        main.value = qr.value;
       }
-      loadActivities();
     }
 
-    // ---------- QR Scanner (เต็มจอ + ซูม 2X + สแกนต่อเนื่อง) ----------
+    // ==========================================
+    // สแกน QR Code ด้วยกล้อง (เต็มจอ + ซูม 2X + สแกนต่อเนื่อง)
+    // ==========================================
     function openQrScanner() {
-      if (!activeActivity || isCameraActive || isCameraStarting) return;
-      isCameraStarting = true;
+      if (!activeActivity || isCameraActive || cameraStartPromise) return;
 
       document.getElementById('qrModal').classList.remove('hidden');
       document.getElementById('qrModeSelect').value = document.getElementById('modeOptionSelect').value;
@@ -607,28 +597,29 @@
         aspectRatio: 1.0
       };
 
-      html5QrCode.start(
+      cameraStartPromise = html5QrCode.start(
         { facingMode: "environment" },
         config,
         onScanSuccess,
-        () => {}
+        function () {}
       ).then(() => {
         isCameraActive = true;
-        isCameraStarting = false;
+        cameraStartPromise = null;
         setupZoom();
       }).catch(err => {
-        isCameraStarting = false;
-        isCameraActive = false;
         console.error("Camera error:", err);
+        isCameraActive = false;
+        cameraStartPromise = null;
         document.getElementById('qrModal').classList.add('hidden');
         Swal.fire({
           icon: 'error',
           title: 'ไม่สามารถเปิดกล้องได้',
-          text: 'กรุณาอนุญาตให้เว็บเข้าถึงกล้องถ่ายรูป หรือลองเปิดผ่านเบราว์เซอร์หลัก (เช่น Chrome/Safari)'
+          text: 'กรุณาอนุญาตให้เว็บเข้าถึงกล้อง และเปิดผ่าน Chrome/Safari โดยตรง (ไม่ใช่เบราว์เซอร์ในแอปอื่น เช่น LINE)'
         });
       });
     }
 
+    // ตั้งซูมเริ่มต้น 2X (ถ้าอุปกรณ์รองรับ)
     function setupZoom() {
       zoomFeature = null;
       try {
@@ -636,22 +627,23 @@
         if (caps && caps.zoomFeature && caps.zoomFeature().isSupported()) {
           zoomFeature = caps.zoomFeature();
           currentZoom = Math.min(2, zoomFeature.max());
-          applyZoom(currentZoom);
-          document.getElementById('zoomToggleBtn').classList.remove('hidden');
+          zoomFeature.apply(currentZoom);
           document.getElementById('zoomLabel').innerText = (currentZoom >= 2 ? '2X' : '1X');
+          document.getElementById('zoomToggleBtn').classList.remove('hidden');
           return;
         }
       } catch (e) {
         console.log("Zoom feature not available:", e);
       }
-      // fallback: applyVideoConstraints
+
+      // ทางเลือกสำรอง: ใช้ applyVideoConstraints
       try {
         html5QrCode.applyVideoConstraints({ advanced: [{ zoom: 2 }] })
           .then(() => {
             currentZoom = 2;
             zoomFeature = { fallback: true };
-            document.getElementById('zoomToggleBtn').classList.remove('hidden');
             document.getElementById('zoomLabel').innerText = '2X';
+            document.getElementById('zoomToggleBtn').classList.remove('hidden');
           })
           .catch(() => {});
       } catch (e) {
@@ -659,45 +651,50 @@
       }
     }
 
-    function applyZoom(value) {
-      try {
-        if (zoomFeature && zoomFeature.fallback) {
-          html5QrCode.applyVideoConstraints({ advanced: [{ zoom: value }] }).catch(() => {});
-        } else if (zoomFeature) {
-          zoomFeature.apply(value);
-        }
-      } catch (e) { console.log("Apply zoom error:", e); }
-    }
-
     function toggleZoom() {
       if (!zoomFeature) return;
       currentZoom = (currentZoom >= 2) ? 1 : 2;
-      if (zoomFeature.max && currentZoom > zoomFeature.max()) currentZoom = zoomFeature.max();
-      applyZoom(currentZoom);
+      try {
+        if (zoomFeature.fallback) {
+          html5QrCode.applyVideoConstraints({ advanced: [{ zoom: currentZoom }] }).catch(() => {});
+        } else {
+          if (zoomFeature.max && currentZoom > zoomFeature.max()) currentZoom = zoomFeature.max();
+          zoomFeature.apply(currentZoom);
+        }
+      } catch (e) { console.log("Apply zoom error:", e); }
       document.getElementById('zoomLabel').innerText = (currentZoom >= 2 ? '2X' : '1X');
     }
 
     function closeQrScanner() {
-      const modal = document.getElementById('qrModal');
-      modal.classList.add('hidden');
+      document.getElementById('qrModal').classList.add('hidden');
       zoomFeature = null;
-      if (html5QrCode && isCameraActive) {
-        const scanner = html5QrCode;
-        isCameraActive = false;
-        scanner.stop()
-          .then(() => { try { scanner.clear(); } catch (e) {} })
-          .catch(() => {});
+
+      const stopNow = () => {
+        if (html5QrCode && isCameraActive) {
+          const scanner = html5QrCode;
+          isCameraActive = false;
+          scanner.stop()
+            .then(() => { try { scanner.clear(); } catch (e) {} })
+            .catch(() => {});
+        }
+      };
+
+      if (cameraStartPromise) {
+        // กล้องกำลังเริ่มทำงาน รอให้เสร็จก่อนค่อยปิด
+        cameraStartPromise.then(stopNow);
+      } else {
+        stopNow();
       }
-      isCameraStarting = false;
-      setTimeout(focusAttendanceInput, 200);
+      setTimeout(focusAttendanceInput, 300);
     }
 
+    // เมื่อกล้องอ่านค่า QR Code ได้
     function onScanSuccess(decodedText) {
       if (!decodedText) return;
       const text = decodedText.trim();
       const now = Date.now();
 
-      if (now < scanLockUntil) return;                              // กำลังแสดงผลคนก่อนหน้า
+      if (now < scanLockUntil) return;                                // กำลังแสดงผลคนก่อนหน้า
       if (text === lastScanText && now - lastScanTime < 4000) return; // กันสแกนรหัสเดิมรัว ๆ
 
       lastScanText = text;
@@ -706,36 +703,39 @@
       processStudentAttendance(text);
     }
 
-    // ---------- Input / RFID ----------
     function focusAttendanceInput() {
       const input = document.getElementById('attendanceInput');
       const select = document.getElementById('modeOptionSelect');
+
       if (document.activeElement === select) return;
 
       const isScanVisible = !document.getElementById('scanSection').classList.contains('hidden');
       const isQrHidden = document.getElementById('qrModal').classList.contains('hidden');
       const isStudentModalHidden = document.getElementById('studentModal').classList.contains('hidden');
       const isErrorModalHidden = document.getElementById('errorNotificationModal').classList.contains('hidden');
+      const isSwalOpen = document.body.classList.contains('swal2-shown');
 
-      if (input && isScanVisible && isQrHidden && isStudentModalHidden && isErrorModalHidden) {
+      if (input && isScanVisible && isQrHidden && isStudentModalHidden && isErrorModalHidden && !isSwalOpen) {
         input.focus();
       }
     }
 
+    // รับค่าจากช่องกรอก / เครื่องอ่าน RFID
     function handleAttendanceSubmit(e) {
       e.preventDefault();
       const inputField = document.getElementById('attendanceInput');
       const scanValue = inputField.value.trim();
       if (!scanValue) return;
 
-      inputField.value = '';
+      inputField.value = ''; // เคลียร์ช่องทันที คนต่อไปแตะต่อได้เลย
       processStudentAttendance(scanValue);
     }
 
-    // ---------- บันทึกเวลา ----------
+    // ประมวลผลการสแกน (ใช้ร่วมกันทั้ง RFID / พิมพ์รหัส / กล้อง QR)
     function processStudentAttendance(scanValue) {
       const modeOption = document.getElementById('modeOptionSelect').value;
 
+      // 1. ค้นหาในแคชทันที
       const student = cachedStudents[scanValue];
       if (!student) {
         showErrorModal({
@@ -745,6 +745,7 @@
         return;
       }
 
+      // 2. เช็คการสแกนซ้ำในรอบนี้ทันที
       if (!cachedTodayScanned[modeOption]) {
         cachedTodayScanned[modeOption] = {};
       }
@@ -758,14 +759,14 @@
         return;
       }
 
+      // 3. ถูกต้อง! อัปเดตแคช + นับยอด + แสดงผลทันที
       cachedTodayScanned[modeOption][student.id] = true;
       todayTotalCount++;
       updateCounter();
 
       showStudentModal(student, modeOption);
 
-      // บันทึกเบื้องหลัง
-      const teacherAtScan = currentTeacher;
+      // 4. บันทึกลง Google Sheets เบื้องหลังแบบ Async
       apiCall('saveAttendance', {
         activityName: activeActivity.name,
         student: student,
@@ -773,22 +774,37 @@
       }).then(res => {
         if (res && res.success) return;
         if (res && res.code === 'AUTH') return;
-        // บันทึกไม่สำเร็จ -> คืนค่าเพื่อให้สแกนใหม่ได้
-        console.error("บันทึกเบื้องหลังขัดข้อง:", res && res.message);
-        if (cachedTodayScanned[modeOption]) delete cachedTodayScanned[modeOption][student.id];
-        todayTotalCount = Math.max(0, todayTotalCount - 1);
-        updateCounter();
-        playFailSound();
-        Swal.fire({
-          toast: true,
-          position: 'top',
-          icon: 'error',
-          title: 'บันทึกไม่สำเร็จ: ' + student.name,
-          text: 'กรุณาสแกนใหม่อีกครั้ง',
-          showConfirmButton: false,
-          timer: 4000
-        });
+        revertScan(student, modeOption, res && res.message);
       });
+    }
+
+    // บันทึกไม่สำเร็จ -> คืนค่าแคช ให้สแกนใหม่ได้
+    function revertScan(student, modeOption, message) {
+      console.error("บันทึกเบื้องหลังขัดข้อง:", message);
+      if (cachedTodayScanned[modeOption]) delete cachedTodayScanned[modeOption][student.id];
+      todayTotalCount = Math.max(0, todayTotalCount - 1);
+      updateCounter();
+      playFailSound();
+      Swal.fire({
+        toast: true,
+        position: 'top',
+        icon: 'error',
+        title: 'บันทึกไม่สำเร็จ: ' + student.name,
+        text: 'กรุณาสแกนใหม่อีกครั้ง',
+        showConfirmButton: false,
+        timer: 4000
+      });
+    }
+
+    function backToDashboard() {
+      closeQrScanner();
+      document.getElementById('scanSection').classList.add('hidden');
+      document.getElementById('dashboardSection').classList.remove('hidden');
+      if (focusKeepInterval) {
+        clearInterval(focusKeepInterval);
+        focusKeepInterval = null;
+      }
+      loadActivities();
     }
 
     function showStudentModal(student, checkMode) {
